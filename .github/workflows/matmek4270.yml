@@ -2,7 +2,7 @@ name: Test MAT-MEK4270 projects
 
 on:
   push:
-    branches: [ "answers" ]
+    branches: [ "**" ]
 
 permissions:
   contents: read
