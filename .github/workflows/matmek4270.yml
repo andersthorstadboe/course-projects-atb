@@ -26,3 +26,4 @@ jobs:
       run: |
         cd projects
         pytest decay_v3.py mesh_function.py differentiate.py
+        pytest decay_v3.py mesh_function.py differentiate.py
