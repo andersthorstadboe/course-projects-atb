@@ -9,6 +9,7 @@ We use various boundary conditions.
 """
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.sparse as sparse
 
 class VibSolver:
     """
@@ -121,12 +122,21 @@ class VibFD2(VibSolver):
     """
     order = 2
 
-    def __init__(self, Nt, T=2*np.pi, w=0.35, I=1):
-        assert (T / np.pi).is_integer()
+    def __init__(self, Nt, T, w=0.35, I=1):
         VibSolver.__init__(self, Nt, T, w, I)
+        assert (T *  w / np.pi).is_integer()
 
     def __call__(self):
-        u = np.zeros(self.Nt+1)
+        D2 = sparse.diags([np.ones(self.Nt), np.full(self.Nt+1, -2), np.ones(self.Nt)],
+                          np.array([-1, 0, 1]), (self.Nt+1, self.Nt+1), 'lil')
+        D2 *= (1/self.dt**2)
+        A = D2 + self.w**2*sparse.eye(self.Nt+1)
+        A[0, :4] = 1, 0, 0, 0
+        A[-1, -4:] = 0, 0, 0, 1
+        b = np.zeros(self.Nt+1)
+        b[0] = self.I
+        b[-1] = self.I
+        u = sparse.linalg.spsolve(A, b)
         return u
 
 class VibFD4(VibFD2):
@@ -143,9 +153,10 @@ class VibFD4(VibFD2):
         return u
 
 def test_order():
-    VibHPL(32, 2*np.pi).test_order()
-    VibFD2(32, 2*np.pi).test_order()
-    VibFD4(32, 2*np.pi).test_order()
+    w = 0.35
+    VibHPL(32, 2*np.pi/w, w).test_order()
+    VibFD2(32, 2*np.pi/w, w).test_order()
+    VibFD4(32, 2*np.pi/w, w).test_order()
 
 if __name__ == '__main__':
     test_order()
