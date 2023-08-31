@@ -66,7 +66,7 @@ class VibSolver:
         """
         u = self()
         ue = self.u_exact()
-        return np.sqrt(self.dt*np.sum((ue-u)**2))
+        return np.sqrt(np.trapz((ue-u)**2, self.t))
 
     def convergence_rates(self, m=4, N0=32):
         """
@@ -157,7 +157,25 @@ class VibFD4(VibFD2):
     order = 4
 
     def __call__(self):
-        u = np.zeros(self.Nt+1)
+        D2 = sparse.diags([-np.ones(self.Nt-1), np.full(self.Nt, 16), np.full(self.Nt+1, -30), np.full(self.Nt, 16), -np.ones(self.Nt-1)],
+                          np.array([-2, -1, 0, 1, 2]), (self.Nt+1, self.Nt+1), 'lil')
+        #D2[1, :5] = np.array([11, -20, 6, 4, -1])
+        #D2[-2, -5:] = np.array([11, -20, 6, 4, -1])[::-1]
+        #D2[1, :7] = np.array([-13, 93, -285, 470, -255, -147, 137]) / 15
+        #D2[-2, -7:] = np.array([-13, 93, -285, 470, -255, -147, 137])[::-1] / 15
+        #D2[1, :6] = np.array([10, -15, -4, 14, -6, 1])
+        #D2[-2, -6:] = np.array([10, -15, -4, 14, -6, 1])[::-1]
+        D2[1, :7] = np.array([0, 45, -154, 214, -156, 61, -10]) # findiff
+        D2[-2, -7:] = np.array([0, 45, -154, 214, -156, 61, -10])[::-1]
+        D2 *= (1/(12*self.dt**2))
+        A = D2 + self.w**2*sparse.eye(self.Nt+1)
+        A[0, :4] = 1, 0, 0, 0
+        A[-1, -4:] = 0, 0, 0, 1
+        b = np.zeros(self.Nt+1)
+        b[0] = self.I
+        b[-1] = self.I
+        u = sparse.linalg.spsolve(A, b)
+        #print(np.linalg.cond(A.toarray()))
         return u
 
 def test_order():
