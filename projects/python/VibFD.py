@@ -103,6 +103,11 @@ class VibSolver:
         assert np.allclose(np.array(r), self.order, atol=1e-2)
 
 class VibHPL(VibSolver):
+    """
+    Second order accurate recursive solver
+
+    Boundary conditions u(0)=I and u'(0)=0
+    """
     order = 2
 
     def __call__(self):
@@ -117,14 +122,16 @@ class VibFD2(VibSolver):
     """
     Second order accurate solver using boundary conditions::
 
-        u(0)=0 and u(T)=0
+        u(0)=I and u(T)=I
 
+    The boundary conditions require that T = n*pi/w, where n is an even integer.
     """
     order = 2
 
-    def __init__(self, Nt, T, w=0.35, I=1):
+    def __init__(self, Nt, T=2*np.pi, w=0.35, I=1):
         VibSolver.__init__(self, Nt, T, w, I)
-        assert (T *  w / np.pi).is_integer()
+        T = T * w / np.pi
+        assert T.is_integer() and T % 2 == 0
 
     def __call__(self):
         D2 = sparse.diags([np.ones(self.Nt), np.full(self.Nt+1, -2), np.ones(self.Nt)],
@@ -143,8 +150,9 @@ class VibFD4(VibFD2):
     """
     Fourth order accurate solver using boundary conditions::
 
-        u(0)=0 and u(T)=0
+        u(0)=I and u(T)=I
 
+    The boundary conditions require that T = n*pi/w, where n is an even integer.
     """
     order = 4
 
