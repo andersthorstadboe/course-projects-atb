@@ -205,7 +205,7 @@ def test_order():
     VibHPL(8, 2*np.pi/w, w).test_order()
     VibFD2(8, 2*np.pi/w, w).test_order()
     VibFD3(8, 2*np.pi/w, w).test_order()
-    VibFD4(8, 2*np.pi/w, w).test_order()
+    VibFD4(8, 2*np.pi/w, w).test_order(N0=20)
 
 if __name__ == '__main__':
     test_order()
