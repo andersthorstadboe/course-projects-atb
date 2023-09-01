@@ -98,8 +98,8 @@ class VibSolver:
         r = [np.log(E[i-1]/E[i])/np.log(dt[i-1]/dt[i]) for i in range(1, m+1, 1)]
         return r, np.array(E), np.array(dt)
 
-    def test_order(self, m=5, N0=40, tol=0.01):
-        r, E, dt = self.convergence_rates(4, N0)
+    def test_order(self, m=5, N0=100, tol=0.1):
+        r, E, dt = self.convergence_rates(m, N0)
         assert np.allclose(np.array(r), self.order, atol=tol)
 
 class VibHPL(VibSolver):
@@ -128,7 +128,7 @@ class VibFD2(VibSolver):
     """
     order = 2
 
-    def __init__(self, Nt, T=2*np.pi, w=0.35, I=1):
+    def __init__(self, Nt, T, w=0.35, I=1):
         VibSolver.__init__(self, Nt, T, w, I)
         T = T * w / np.pi
         assert T.is_integer() and T % 2 == 0
@@ -145,10 +145,10 @@ class VibFD2(VibSolver):
         u = sparse.linalg.spsolve(A.tocsr(), b)
         return u
 
-class VibFD2DN(VibSolver):
+class VibFD3(VibSolver):
     """
-    Second order accurate solver using a mixture of Dirichlet and Neumann
-    boundary conditions::
+    Second order accurate solver using mixed Dirichlet and Neumann boundary
+    conditions::
 
         u(0)=I and u'(T)=0
 
@@ -156,7 +156,7 @@ class VibFD2DN(VibSolver):
     """
     order = 2
 
-    def __init__(self, Nt, T=2*np.pi, w=0.35, I=1):
+    def __init__(self, Nt, T, w=0.35, I=1):
         VibSolver.__init__(self, Nt, T, w, I)
         T = T * w / np.pi
         assert T.is_integer() and T % 2 == 0
@@ -166,9 +166,10 @@ class VibFD2DN(VibSolver):
         D2 *= (1/self.dt**2)
         A = (D2 + self.w**2*sparse.eye(self.Nt+1)).tolil()
         A[0, :4] = 1, 0, 0, 0
-        A[-1, -4:] = np.array([0, 1/2, -2, 3/2])/self.dt
+        A[-1, -4:] = 0, 0, 0, 1
         b = np.zeros(self.Nt+1)
         b[0] = self.I
+        b[-1] = self.I
         u = sparse.linalg.spsolve(A.tocsr(), b)
         return u
 
@@ -203,8 +204,8 @@ def test_order():
     w = 0.35
     VibHPL(8, 2*np.pi/w, w).test_order()
     VibFD2(8, 2*np.pi/w, w).test_order()
-    VibFD2DN(8, 2*np.pi/w, w).test_order()
-    VibFD4(8, 2*np.pi/w, w).test_order(N0=50, tol=0.1)
+    VibFD3(8, 2*np.pi/w, w).test_order()
+    VibFD4(8, 2*np.pi/w, w).test_order()
 
 if __name__ == '__main__':
     test_order()
