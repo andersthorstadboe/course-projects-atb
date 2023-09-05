@@ -232,7 +232,6 @@ class VibFD5(VibFD2):
         return u
 
 
-
 def test_order():
     w = 0.35
     VibHPL(8, 2*np.pi/w, w).test_order()
