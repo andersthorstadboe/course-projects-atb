@@ -240,4 +240,6 @@ def test_order():
     VibFD4(8, 2*np.pi/w, w).test_order(N0=20)
 
 if __name__ == '__main__':
-    test_order()
+    #test_order()
+    a = VibFD4(8, 2*np.pi/0.35, 0.35)
+    b = a()
