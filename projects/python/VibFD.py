@@ -50,6 +50,8 @@ class VibSolver:
         self.t = np.linspace(0, self.T, Nt+1)
 
     def ue(self):
+        """Return exact solution as sympy function
+        """
         return self.I*sp.cos(self.w*t)
 
     def u_exact(self):
