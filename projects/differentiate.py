@@ -2,10 +2,28 @@ import numpy as np
 
 
 def differentiate(u, dt):
-    pass
+
+    Nt = len(u)
+    du = np.zeros_like(u)
+    # Boundaries
+    du[0] = (u[1] - u[0])/dt
+    du[-1] = (u[-1] - u[-2])/dt
+
+    for i in range(1,Nt-1):
+        du[i] = (u[i+1] - u[i-1])/(2*dt)
+    
+    return du
 
 def differentiate_vector(u, dt):
-    pass
+    Nt = len(u)
+    du = np.zeros_like(u)
+    # Boundaries
+    du[0] = (u[1] - u[0])/dt
+    du[-1] = (u[-1] - u[-2])/dt
+    # Interior
+    du[1:-2] = (u[2:-1] - u[1:-2])/(2*dt)
+
+    return du
 
 def test_differentiate():
     t = np.linspace(0, 1, 10)
