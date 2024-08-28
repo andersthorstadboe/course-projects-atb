@@ -17,12 +17,12 @@ def differentiate(u, dt):
 def differentiate_vector(u, dt):
     Nt = len(u)
     du = np.zeros_like(u)
+    # Interior
+    du[1:-2] = (u[2:-1] - u[1:-2])/(2*dt)
     # Boundaries
     du[0] = (u[1] - u[0])/dt
     du[-1] = (u[-1] - u[-2])/dt
-    # Interior
-    du[1:-2] = (u[2:-1] - u[1:-2])/(2*dt)
-
+    
     return du
 
 def test_differentiate():
