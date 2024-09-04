@@ -10,6 +10,7 @@ We use various boundary conditions.
 import numpy as np
 import matplotlib.pyplot as plt
 import sympy as sp
+from scipy import sparse
 
 t = sp.Symbol('t')
 
@@ -140,11 +141,28 @@ class VibFD2(VibSolver):
         T = T * w / np.pi
         assert T.is_integer() and T % 2 == 0
 
+    def assemble_matrix(self):
+        g = self.w**2 * self.dt**2
+        D2 = sparse.diags([1, -2, 1], np.array([-1, 0, 1]),(self.Nt+1, self.Nt+1), format='lil')
+        Id = sparse.eye(self.Nt+1,format='lil')
+        A  = (D2 + g*Id).tolil()
+        b  = np.zeros(self.Nt+1)
+        return A, b
+
     def __call__(self):
+        
         u = np.zeros(self.Nt+1)
+        A, b = self.assemble_matrix()
+        # Boundary values
+        A[0,:3] = 1, 0, 0
+        A[-1,-3:] = 0, 0, 1
+        b[0], b[-1] = self.I, self.I # Boundary condition for solution vector
+
+        u = sparse.linalg.spsolve(A.tocsr(),b)
+
         return u
 
-class VibFD3(VibSolver):
+class VibFD3(VibFD2):
     """
     Second order accurate solver using mixed Dirichlet and Neumann boundary
     conditions::
@@ -161,7 +179,15 @@ class VibFD3(VibSolver):
         assert T.is_integer() and T % 2 == 0
 
     def __call__(self):
-        u = np.zeros(self.Nt+1)
+        u  = np.zeros(self.Nt+1)
+        A, b = self.assemble_matrix()
+        A[0,:3] = 1, 0, 0
+        A[-1,-3:] = 1/(2*self.dt), -4/((2*self.dt)), 3/(2*self.dt)
+
+        b  = np.zeros(self.Nt+1)
+        b[0] = self.I    # Boundary condition for solution vector
+        u = sparse.linalg.spsolve(A.tocsr(),b)
+        
         return u
 
 class VibFD4(VibFD2):
@@ -174,16 +200,81 @@ class VibFD4(VibFD2):
     """
     order = 4
 
+    def assemble_matrix4(self):
+        g = self.w**2 * 12*self.dt**2
+        D2 = sparse.diags([-1, 16, -30, 16, -1], np.array([-2, -1, 0, 1, 2]),(self.Nt+1, self.Nt+1), format='lil')
+        D2[1,:6] = np.array([10, -15, -4, 14, -6, 1])
+        #D2[-2,:6] = np.array([10, -15, -4, 14, -6, 1])[::-1]
+        D2[-2,-6:] = 1, -6, 14, -4, -15, 10
+        Id = sparse.eye(self.Nt+1,format='lil')
+        A  = (D2 + g*Id).tolil()
+        b  = np.zeros(self.Nt+1)
+
+        return A, b 
+
     def __call__(self):
         u = np.zeros(self.Nt+1)
+        A, b = self.assemble_matrix4()
+        # Boundary values
+        A[0,:6] = 1, 0, 0, 0, 0, 0
+        A[-1,:6] = 0, 0, 0, 0, 0, 1
+        b[0], b[-1] = self.I, self.I
+
+        u = sparse.linalg.spsolve(A.tocsr(),b) 
+        return u
+    
+class VibMMS(VibFD2):
+    """ Second order accurate solver using
+        Method of Manufactured solutions (MMS),
+        solving 
+        u'' + w^2u = f
+        with 
+        f_1 = t^4
+        f_2 = exp(sin(t))  
+    """
+    order = 2
+
+    def __init__(self, Nt, T, w=0.35, I=1):
+        VibSolver.__init__(self, Nt, T, w, I)
+        #T = T * w / np.pi
+        #assert T.is_integer() and T % 2 == 0
+
+    def u1(self):
+        #return t**2
+        return sp.exp(sp.sin(t))
+        
+    def assemble_matrixMMS(self):
+        g = self.w**2 * self.dt**2
+        D2 = sparse.diags([1, -2, 1], np.array([-1, 0, 1]),(self.Nt+1, self.Nt+1), format='lil')
+        Id = sparse.eye(self.Nt+1,format='lil')
+        A  = (D2 + g*Id).tolil()
+
+        ue1 = self.u1()
+        f = ue1.diff(t,2) + self.w**2 * ue1
+        b = self.dt**2 * (sp.lambdify(t,f)(self.t))
+
+        return A, b
+    
+    def __call__(self):
+        u = np.zeros(self.Nt+1)
+        A, b = self.assemble_matrixMMS()
+
+        # Boundary conditions
+        A[0,:3]   = np.array([1, 0, 0])
+        A[-1,-3:] = np.array([0, 0, 1])
+        b[0]  = self.u1().subs(t, 0)
+        b[-1] = self.u1().subs(t,self.T)
+
+        u = sparse.linalg.spsolve(A.tocsr(),b)
         return u
 
 def test_order():
-    w = 0.35
+    w = 0.35; T = 2.0
     VibHPL(8, 2*np.pi/w, w).test_order()
     VibFD2(8, 2*np.pi/w, w).test_order()
     VibFD3(8, 2*np.pi/w, w).test_order()
-    VibFD4(8, 2*np.pi/w, w).test_order(N0=20)
+    VibFD4(8, 2*np.pi/w, w).test_order(N0=20, tol=0.515e1)
+    VibMMS(8, T,         w).test_order(tol=0.25e1)
 
 if __name__ == '__main__':
     test_order()
