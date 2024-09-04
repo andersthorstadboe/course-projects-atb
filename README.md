@@ -6,5 +6,6 @@ Projects to be completed for the course MATMEK-4270 (https://www.uio.no/studier/
 
 ## Progress
 - [x] Week 34/35
-- [ ] Week 36
-- [ ]  
+- [x] Week 36
+- [ ] Week 37
+- [ ] Week 38
