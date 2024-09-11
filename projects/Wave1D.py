@@ -162,6 +162,7 @@ class Wave1D:
         else: # use u_t = 0 for un = u(x, dt)
             self.un[:] = self.unm1 + 0.5*C**2* (D @ self.unm1)
             self.apply_bcs(bc, self.un)
+            
         if save_step == 1:
             plotdata[1] = self.un.copy()
 
