@@ -46,11 +46,25 @@ class Wave1D:
         The returned matrix is not divided by dx**2
         """
         D = sparse.diags([1, -2, 1], [-1, 0, 1], (self.N+1, self.N+1), 'lil')
-        if bc == 1: # Neumann condition is baked into stencil
-            raise NotImplementedError
+        bcl,bcr = bc['left'], bc['right']
+        # Left boundary
+        if bcl == 0:
+            D[0,:] = 0
 
-        elif bc == 3: # periodic (Note u[0] = u[-1])
-            raise NotImplementedError
+        elif bcl == 1:
+            D[0,:2] = -2, 2
+        
+        # Right boundary
+        if bcr == 0:
+            D[-1,:] = 0
+        elif bcr == 1: # Neumann condition is baked into stencil
+            D[-1,-2:] = 2,-2
+            #raise NotImplementedError
+
+        # For periodic boundary
+        if bcl == 3 and bcr == 3: # periodic (Note u[0] = u[-1])
+            D[0,-2] = 1
+            #raise NotImplementedError
 
         return D
 
@@ -71,21 +85,34 @@ class Wave1D:
 
         """
         u = u if u is not None else self.unp1
-        if bc == 0: # Dirichlet condition
-            u[0] = 0
-            u[-1] = 0
+        bcl, bcr = bc['left'], bc['right']
 
-        elif bc == 1: # Neumann condition
+        # Left boundary
+        if bcl == 0: # Dirichlet condition, left
+            pass
+            #u[0]  = 0
+            #u[-1] = 0
+        elif bcl == 1: # Neumann condition, left
             pass
 
-        elif bc == 2: # Open boundary
-            raise NotImplementedError
+        elif bcl == 2: # Open boundary, left
+            u[0]  = 2*(1 - self.cfl)*self.un[ 0] + (2*self.cfl**2)/(1 + self.cfl)*self.un[ 1] - (1 - self.cfl)/(1 + self.cfl)*self.unm1[ 0]
 
-        elif bc == 3:
-            raise NotImplementedError
+        if bcr == 0: # Dirichlet condition, right
+            pass
 
-        else:
-            raise RuntimeError(f"Wrong bc = {bc}")
+        elif bcr == 1: # Neumann condition, right
+            pass
+
+        elif bcr == 2: # Open boundary, right
+            u[-1] = 2*(1 - self.cfl)*self.un[-1] + (2*self.cfl**2)/(1 + self.cfl)*self.un[-2] - (1 - self.cfl)/(1 + self.cfl)*self.unm1[-1]
+        
+        # Periodic boundary, need to be same on both sides
+        if bcl == 3 and bcr == 3:
+            u[-1] = u[0]
+
+        #else:
+        #    raise RuntimeError(f"Wrong bc = {bc}")
 
     @property
     def dt(self):
@@ -179,29 +206,35 @@ class Wave1D:
 
 def test_pulse_bcs():
     sol = Wave1D(100, cfl=1, L0=2, c0=1)
-    data = sol(100, bc=0, ic=0, save_step=100)
+
+    data = sol(100, bc={'left': 0, 'right': 0}, ic=0, save_step=100)
     assert np.linalg.norm(data[0]+data[100]) < 1e-12
-    data = sol(100, bc=0, ic=1, save_step=100)
+    data = sol(100, bc={'left': 0, 'right': 0}, ic=1, save_step=100)
     assert np.linalg.norm(data[0]+data[100]) < 1e-12
-    data = sol(100, bc=1, ic=0, save_step=100)
+
+    data = sol(100, bc={'left': 1, 'right': 1}, ic=0, save_step=100)
     assert np.linalg.norm(data[0]-data[100]) < 1e-12
-    data = sol(100, bc=1, ic=1, save_step=100)
+    data = sol(100, bc={'left': 1, 'right': 1}, ic=1, save_step=100)
     assert np.linalg.norm(data[0]-data[100]) < 1e-12
-    data = sol(100, bc=2, ic=0, save_step=100)
+
+    data = sol(100, bc={'left': 2, 'right': 2}, ic=0, save_step=100)
     assert np.linalg.norm(data[100]) < 1e-12
-    data = sol(100, bc=2, ic=1, save_step=100)
+    data = sol(100, bc={'left': 2, 'right': 2}, ic=1, save_step=100)
     assert np.linalg.norm(data[100]) < 1e-12
-    data = sol(100, bc=3, ic=0, save_step=100)
+
+    data = sol(100, bc={'left': 3, 'right': 3}, ic=0, save_step=100)
     assert np.linalg.norm(data[0]-data[100]) < 1e-12
-    data = sol(100, bc=3, ic=1, save_step=100)
+    data = sol(100, bc={'left': 3, 'right': 3}, ic=1, save_step=100)
     assert np.linalg.norm(data[0]-data[100]) < 1e-12
 
 
 
 if __name__ == '__main__':
-    #sol = Wave1D(100, cfl=1, L0=2, c0=1)
-    #data = sol(100, bc=3, save_step=1, ic=1)
-    #sol.animation(data)
+    #'''
+    sol = Wave1D(200, cfl=1, L0=2, c0=1)
+    data = sol(100, bc={'left': 3, 'right': 3}, save_step=1, ic=0)
+    sol.animation(data)
+    #'''
     test_pulse_bcs()
     #data = sol(200, bc=2, ic=0, save_step=100)
 
