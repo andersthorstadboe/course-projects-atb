@@ -112,7 +112,7 @@ class Poisson:
         uj = sp.lambdify(x, ue)(self.x)
         return np.sqrt(self.dx*np.sum((uj-u)**2))
 
-def test_poisson():
+def test_poisson(L=1):
     sol = Poisson(L=2,N=100)
 
     N = 100
@@ -158,4 +158,4 @@ if __name__ == '__main__':
     print(f'Boundary conditions: u(0)={bc[0]:2.4f}, u(L)={bc[1]:2.2f}')
     print(f'Discretization: N = {sol.N}')
     print(f'L2-error: {sol.l2_error(u, ue)}')
-    test_poisson()
+    test_poisson(L=L)
