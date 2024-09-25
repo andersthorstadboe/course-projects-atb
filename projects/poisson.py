@@ -113,16 +113,49 @@ class Poisson:
         return np.sqrt(self.dx*np.sum((uj-u)**2))
 
 def test_poisson():
-    assert False
+    sol = Poisson(L=2,N=100)
+
+    N = 100
+    ue = x**2; tol = 1e-12
+    bc=(ue.subs(x,0),ue.subs(x,L))
+    data = sol(100,bc=(ue.subs(x,0),ue.subs(x,L)),f=sp.diff(ue, x, 2))
+    print('\nManufactured solution: ', ue)
+    print(f'Boundary conditions: u(0)={bc[0]:2.4f}, u(L)={bc[1]:2.2f}')
+    print('Test with N = %g; tol = %g' %(N,tol))
+    print('Test L2-error: %g\n' %(sol.l2_error(data,ue)))
+    assert sol.l2_error(data,ue) < tol
+
+    sol = Poisson(L=2,N=100)
+    N = 30000
+    ue = sp.exp(4*sp.cos(x)); tol = 1e-5
+    bc=(ue.subs(x,0),ue.subs(x,L))
+    data = sol(N,bc=(ue.subs(x,0),ue.subs(x,L)),f=sp.diff(ue, x, 2))
+    print('Manufactured solution: ', ue)
+    print(f'Boundary conditions: u(0)={bc[0]:2.4f}, u(L)={bc[1]:2.2f}')
+    print('Test with N = %g; tol = %g' %(N,tol))
+    print('Test L2-error: %g\n' %(sol.l2_error(data,ue)))
+    assert sol.l2_error(data,ue) < tol
+
+    sol = Poisson(L=2,N=100)
+    N = 10000
+    ue = sp.exp(x**2); tol = 1e-5
+    bc=(ue.subs(x,0),ue.subs(x,L))
+    data = sol(N,bc=(ue.subs(x,0),ue.subs(x,L)),f=sp.diff(ue, x, 2))
+    print('Manufactured solution: ', ue)
+    print(f'Boundary conditions: u(0)={bc[0]:2.4f}, u(L)={bc[1]:2.2f}')
+    print('Test with N = %g; tol = %g' %(N,tol))
+    print('Test L2-error: %g\n' %(sol.l2_error(data,ue)))
+    assert sol.l2_error(data,ue) < tol
 
 if __name__ == '__main__':
     L = 2
     sol = Poisson(L=L)
-    ue = sp.exp(4*sp.cos(x))
+    ue = 0*x#sp.exp(4*sp.cos(x))
     #ue = x**2
     bc = (ue.subs(x, 0), ue.subs(x, L))
     u = sol(100, bc=bc, f=sp.diff(ue, x, 2))
     print('Manufactured solution: ', ue)
     print(f'Boundary conditions: u(0)={bc[0]:2.4f}, u(L)={bc[1]:2.2f}')
     print(f'Discretization: N = {sol.N}')
-    print(f'L2-error {sol.l2_error(u, ue)}')
+    print(f'L2-error: {sol.l2_error(u, ue)}')
+    test_poisson()
