@@ -112,7 +112,7 @@ class Poisson:
         uj = sp.lambdify(x, ue)(self.x)
         return np.sqrt(self.dx*np.sum((uj-u)**2))
 
-def test_poisson(L=1):
+def test_poisson(L):
     sol = Poisson(L=2,N=100)
 
     N = 100
